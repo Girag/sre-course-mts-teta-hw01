@@ -1,0 +1,4 @@
+---
+
+databases:
+  - { db: "weather", user: "weather_user", password: "weather_password" }

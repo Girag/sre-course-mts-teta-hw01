@@ -1,0 +1,39 @@
+---
+
+- name: Create the database
+  become: true
+  become_user: postgres
+  postgresql_db:
+    name: "{{ item.db }}"
+    state: present
+  loop: "{{ databases | flatten(1) }}"
+  when: databases is defined and databases | length > 0
+
+- name: Create the user
+  become: true
+  become_user: postgres
+  postgresql_user:
+    name: "{{ item.user }}"
+    password: "{{ item.password }}"
+    state: present
+  loop: "{{ databases | flatten(1) }}"
+  when: databases is defined and databases | length > 0
+
+- name: Create database schema
+  postgresql_query:
+    db: "{{ item.db }}"
+    query: 'create table if not exists public.cities (id bigserial, name varchar(255)); create table if not exists public.forecast ( id bigserial, "cityId" bigint, "dateTime" bigint, temperature integer, summary text);'
+  loop: "{{ databases | flatten(1) }}"
+  when: databases is defined and databases | length > 0
+
+- name: "Grant all necessary privileges"
+  become: true
+  become_user: postgres
+  postgresql_privs:
+    db: "{{ item.db }}"
+    role: "{{ item.user }}"
+    objs: ALL_IN_SCHEMA
+    privs: SELECT,INSERT,UPDATE,DELETE
+    grant_option: yes
+  loop: "{{ databases | flatten(1) }}"
+  when: databases is defined and databases | length > 0
